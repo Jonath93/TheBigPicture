@@ -1,14 +1,14 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { IProduct } from './product';
 import { ProductService } from './product.service';
+import { Subscription } from 'rxjs';
 
 @Component({
-    selector:'pm-products',
     templateUrl:'./product-list.component.html',
     styleUrls:['./product-list.component.css'],
 })
 
-export class ProductListComponent implements OnInit{
+export class ProductListComponent implements OnInit,OnDestroy{
 
     pageTitle:string = 'Product List'
     imageWidth:number=50;
@@ -17,6 +17,8 @@ export class ProductListComponent implements OnInit{
     txtImage:string = 'Hide'
     products:IProduct[] = [];
     filteredProducts:IProduct[] = [];
+    errorMessage:string = ''
+    sub!: Subscription;
     constructor(private productService:ProductService){}
 
     private _listFilter:string = '';
@@ -39,8 +41,17 @@ export class ProductListComponent implements OnInit{
       return this.products.filter((x:IProduct)=> x.productName.toLocaleLowerCase().includes(filterBy) );
     }
     ngOnInit(): void {
-      this.products = this.productService.getProducts();
-      this.filteredProducts= this.products;
+      this.sub = this.productService.getProducts().subscribe({
+        next:x =>{ 
+          this.products = x 
+          this.filteredProducts= this.products;
+
+        },
+        error:err =>this.errorMessage =err
+       });
+    }
+    ngOnDestroy(): void {
+      this.sub.unsubscribe();
     }
     onRatingClicked(message:string):void{
       this.pageTitle = 'Product List: '+message;
